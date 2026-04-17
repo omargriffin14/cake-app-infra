@@ -24,7 +24,7 @@ resource "aws_security_group" "backend_sg" {
     from_port       = 5000
     to_port         = 5000
     protocol        = "tcp"
-    security_groups = [data.aws_lb.existing_alb.security_groups[0]]
+    security_groups = [var.alb_security_group_id]
   }
 
   egress {
