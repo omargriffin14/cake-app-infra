@@ -17,3 +17,7 @@ output "cloudfront_url" {
 output "db_secret_arn" {
   value = aws_secretsmanager_secret.db_credentials.arn
 }
+
+output "nat_gateway_id" {
+  value = aws_nat_gateway.main.id
+}
