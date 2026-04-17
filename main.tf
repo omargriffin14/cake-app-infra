@@ -245,3 +245,11 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
     password = var.db_password
   })
 }
+
+# ──────────────────────────────────────────
+# IAM — SSM Session Manager access
+# ──────────────────────────────────────────
+resource "aws_iam_role_policy_attachment" "ssm_access" {
+  role       = aws_iam_role.backend_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
