@@ -255,15 +255,28 @@ resource "aws_iam_role_policy_attachment" "ssm_access" {
 }
 
 # ──────────────────────────────────────────
-# NAT Gateway — imported from console
+# Elastic IP — NAT Gateway
+# ──────────────────────────────────────────
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name = "${var.app_name}-nat-eip"
+  }
+}
+
+# ──────────────────────────────────────────
+# NAT Gateway — Public Subnet
 # ──────────────────────────────────────────
 resource "aws_nat_gateway" "main" {
-  allocation_id = var.nat_eip_allocation_id
+  allocation_id = aws_eip.nat.id
   subnet_id     = var.public_subnet_id
 
   tags = {
-    Name = "project-nat-gateway"
+    Name = "${var.app_name}-nat-gateway"
   }
+
+  depends_on = [aws_eip.nat]
 }
 
 # ──────────────────────────────────────────
