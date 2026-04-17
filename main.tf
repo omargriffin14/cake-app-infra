@@ -253,3 +253,36 @@ resource "aws_iam_role_policy_attachment" "ssm_access" {
   role       = aws_iam_role.backend_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
+
+# ──────────────────────────────────────────
+# NAT Gateway — imported from console
+# ──────────────────────────────────────────
+resource "aws_nat_gateway" "main" {
+  allocation_id = var.nat_eip_allocation_id
+  subnet_id     = var.public_subnet_id
+
+  tags = {
+    Name = "project-nat-gateway"
+  }
+}
+
+# ──────────────────────────────────────────
+# Route Table — Private Subnet
+# ──────────────────────────────────────────
+resource "aws_route_table" "private" {
+  vpc_id = var.vpc_id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main.id
+  }
+
+  tags = {
+    Name = "${var.app_name}-private-rt"
+  }
+}
+
+resource "aws_route_table_association" "private" {
+  subnet_id      = var.private_subnet_id
+  route_table_id = aws_route_table.private.id
+}
