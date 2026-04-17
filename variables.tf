@@ -44,7 +44,7 @@ variable "ec2_ami" {
 }
 
 variable "ec2_instance_type" {
-  default = "t2.micro"
+  default = "t3.micro"
 }
 
 variable "ec2_key_name" {
