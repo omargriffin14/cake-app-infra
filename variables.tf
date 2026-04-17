@@ -54,3 +54,7 @@ variable "ec2_key_name" {
 variable "app_name" {
   default = "cake-app"
 }
+
+variable "alb_security_group_id" {
+  description = "Security group ID attached to the existing ALB"
+}
