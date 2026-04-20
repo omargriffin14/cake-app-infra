@@ -62,3 +62,7 @@ variable "alb_security_group_id" {
 variable "ses_email" {
   description = "Email address to verify in SES for sending order confirmations"
 }
+
+variable "rds_security_group_id" {
+  description = "Security group ID attached to the RDS instance"
+}
