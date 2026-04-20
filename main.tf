@@ -243,6 +243,7 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
     database = var.db_name
     username = var.db_username
     password = var.db_password
+    s3_uploads_bucket = aws_s3_bucket.uploads.bucket
   })
 }
 
