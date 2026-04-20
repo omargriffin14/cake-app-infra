@@ -58,3 +58,7 @@ variable "app_name" {
 variable "alb_security_group_id" {
   description = "Security group ID attached to the existing ALB"
 }
+
+variable "ses_email" {
+  description = "Email address to verify in SES for sending order confirmations"
+}
