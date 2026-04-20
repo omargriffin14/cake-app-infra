@@ -299,3 +299,78 @@ resource "aws_route_table_association" "private" {
   subnet_id      = var.private_subnet_id
   route_table_id = aws_route_table.private.id
 }
+
+# ──────────────────────────────────────────
+# S3 — Uploads Bucket (customer images)
+# ──────────────────────────────────────────
+resource "aws_s3_bucket" "uploads" {
+  bucket = "${var.app_name}-uploads-${random_id.suffix.hex}"
+
+  tags = {
+    Name = "${var.app_name}-uploads"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "uploads" {
+  bucket                  = aws_s3_bucket.uploads.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "uploads" {
+  bucket = aws_s3_bucket.uploads.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_cors_configuration" "uploads" {
+  bucket = aws_s3_bucket.uploads.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST"]
+    allowed_origins = ["*"]
+    max_age_seconds = 3000
+  }
+}
+
+# ──────────────────────────────────────────
+# IAM — S3 uploads + SES permissions
+# ──────────────────────────────────────────
+resource "aws_iam_role_policy" "backend_s3_ses" {
+  name = "${var.app_name}-backend-s3-ses-policy"
+  role = aws_iam_role.backend_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject"
+        ]
+        Resource = "${aws_s3_bucket.uploads.arn}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# ──────────────────────────────────────────
+# SES — Email Verification
+# ──────────────────────────────────────────
+resource "aws_ses_email_identity" "bakery" {
+  email = var.ses_email
+}
