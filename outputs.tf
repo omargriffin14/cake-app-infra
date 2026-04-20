@@ -21,3 +21,11 @@ output "db_secret_arn" {
 output "nat_gateway_id" {
   value = aws_nat_gateway.main.id
 }
+
+output "uploads_bucket_name" {
+  value = aws_s3_bucket.uploads.bucket
+}
+
+output "ses_email_identity" {
+  value = aws_ses_email_identity.bakery.email
+}
