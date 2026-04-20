@@ -375,3 +375,16 @@ resource "aws_iam_role_policy" "backend_s3_ses" {
 resource "aws_ses_email_identity" "bakery" {
   email = var.ses_email
 }
+
+# ──────────────────────────────────────────
+# RDS Security Group Rule — Cake App Backend
+# ──────────────────────────────────────────
+resource "aws_security_group_rule" "rds_from_cake_backend" {
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  security_group_id        = var.rds_security_group_id
+  source_security_group_id = aws_security_group.backend_sg.id
+  description              = "Allow MySQL access from cake app backend"
+}
