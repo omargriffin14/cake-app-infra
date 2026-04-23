@@ -157,7 +157,17 @@ resource "aws_s3_bucket_versioning" "frontend" {
 }
 
 # ──────────────────────────────────────────
-# CloudFront — OAC + Distribution
+# CloudFront — OAC
+# ──────────────────────────────────────────
+resource "aws_cloudfront_origin_access_control" "oac" {
+  name                              = "${var.app_name}-oac"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# ──────────────────────────────────────────
+# CloudFront — Distribution
 # ──────────────────────────────────────────
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
