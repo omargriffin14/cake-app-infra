@@ -159,16 +159,11 @@ resource "aws_s3_bucket_versioning" "frontend" {
 # ──────────────────────────────────────────
 # CloudFront — OAC + Distribution
 # ──────────────────────────────────────────
-resource "aws_cloudfront_origin_access_control" "oac" {
-  name                              = "${var.app_name}-oac"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
-}
-
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   default_root_object = "index.html"
+
+  aliases = ["nelasbakery.com", "www.nelasbakery.com"]
 
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
@@ -188,7 +183,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
   }
 
-  # SPA fallback — React Router support
   custom_error_response {
     error_code         = 403
     response_code      = 200
@@ -206,27 +200,10 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = aws_acm_certificate.nelasbakery.arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
-}
-
-resource "aws_s3_bucket_policy" "frontend_oac" {
-  bucket = aws_s3_bucket.frontend.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "cloudfront.amazonaws.com" }
-      Action    = "s3:GetObject"
-      Resource  = "${aws_s3_bucket.frontend.arn}/*"
-      Condition = {
-        StringEquals = {
-          "AWS:SourceArn" = aws_cloudfront_distribution.frontend.arn
-        }
-      }
-    }]
-  })
 }
 
 # ──────────────────────────────────────────
