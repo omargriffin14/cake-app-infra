@@ -29,3 +29,11 @@ output "uploads_bucket_name" {
 output "ses_email_identity" {
   value = aws_ses_email_identity.bakery.email
 }
+
+output "email_storage_bucket" {
+  value = aws_s3_bucket.email_storage.bucket
+}
+
+output "lambda_function_name" {
+  value = aws_lambda_function.email_forwarder.function_name
+}
