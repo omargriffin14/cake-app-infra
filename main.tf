@@ -388,3 +388,284 @@ resource "aws_security_group_rule" "rds_from_cake_backend" {
   source_security_group_id = aws_security_group.backend_sg.id
   description              = "Allow MySQL access from cake app backend"
 }
+
+# ──────────────────────────────────────────
+# Route 53 — Hosted Zone
+# ──────────────────────────────────────────
+resource "aws_route53_zone" "nelasbakery" {
+  name = "nelasbakery.com"
+}
+
+# ──────────────────────────────────────────
+# ACM — Certificate
+# ──────────────────────────────────────────
+resource "aws_acm_certificate" "nelasbakery" {
+  domain_name               = "nelasbakery.com"
+  subject_alternative_names = ["www.nelasbakery.com"]
+  validation_method         = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# ──────────────────────────────────────────
+# Route 53 — ACM Validation Records
+# ──────────────────────────────────────────
+resource "aws_route53_record" "acm_validation_apex" {
+  zone_id = aws_route53_zone.nelasbakery.zone_id
+  name    = "_e1f630d5116452f188a6c84677f5477f.nelasbakery.com"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["_4175c632339a621fa5ae2c946378647c.jkddzztszm.acm-validations.aws"]
+}
+
+resource "aws_route53_record" "acm_validation_www" {
+  zone_id = aws_route53_zone.nelasbakery.zone_id
+  name    = "_1f86df63b76701dc763fb6279e0bae98.www.nelasbakery.com"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["_3855229175d6cca738e73fa5740de3de.jkddzztszm.acm-validations.aws"]
+}
+
+# ──────────────────────────────────────────
+# Route 53 — A Records pointing to CloudFront
+# ──────────────────────────────────────────
+resource "aws_route53_record" "apex" {
+  zone_id = aws_route53_zone.nelasbakery.zone_id
+  name    = "nelasbakery.com"
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.frontend.domain_name
+    zone_id                = aws_cloudfront_distribution.frontend.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "www" {
+  zone_id = aws_route53_zone.nelasbakery.zone_id
+  name    = "www.nelasbakery.com"
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.frontend.domain_name
+    zone_id                = aws_cloudfront_distribution.frontend.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+# ──────────────────────────────────────────
+# Route 53 — MX Record for SES
+# ──────────────────────────────────────────
+resource "aws_route53_record" "mx" {
+  zone_id = aws_route53_zone.nelasbakery.zone_id
+  name    = "nelasbakery.com"
+  type    = "MX"
+  ttl     = 300
+  records = ["10 inbound-smtp.us-east-1.amazonaws.com"]
+}
+
+# ──────────────────────────────────────────
+# Route 53 — SES Domain Verification TXT
+# ──────────────────────────────────────────
+resource "aws_route53_record" "ses_verification" {
+  zone_id = aws_route53_zone.nelasbakery.zone_id
+  name    = "_amazonses.nelasbakery.com"
+  type    = "TXT"
+  ttl     = 300
+  records = ["t69S2mD8h4RDi5TN1CnPsJsRgk+uaHXbLXlUVM2CWQc="]
+}
+
+# ──────────────────────────────────────────
+# Route 53 — SES DKIM Records
+# ──────────────────────────────────────────
+resource "aws_route53_record" "dkim_1" {
+  zone_id = aws_route53_zone.nelasbakery.zone_id
+  name    = "iqpvvvtgg6rxxycqtzhmk6gs2fnbdl3y._domainkey.nelasbakery.com"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["iqpvvvtgg6rxxycqtzhmk6gs2fnbdl3y.dkim.amazonses.com"]
+}
+
+resource "aws_route53_record" "dkim_2" {
+  zone_id = aws_route53_zone.nelasbakery.zone_id
+  name    = "aiovy7hilc443sjgi3umt2l2l3zzhc5m._domainkey.nelasbakery.com"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["aiovy7hilc443sjgi3umt2l2l3zzhc5m.dkim.amazonses.com"]
+}
+
+resource "aws_route53_record" "dkim_3" {
+  zone_id = aws_route53_zone.nelasbakery.zone_id
+  name    = "ovhj77f76y2t6j6jhfowfu77ltw4ivtb._domainkey.nelasbakery.com"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["ovhj77f76y2t6j6jhfowfu77ltw4ivtb.dkim.amazonses.com"]
+}
+
+# ──────────────────────────────────────────
+# SES — Domain Identity
+# ──────────────────────────────────────────
+resource "aws_ses_domain_identity" "nelasbakery" {
+  domain = "nelasbakery.com"
+}
+
+resource "aws_ses_domain_dkim" "nelasbakery" {
+  domain = aws_ses_domain_identity.nelasbakery.domain
+}
+
+# ──────────────────────────────────────────
+# RDS Security Group Rule — Cake Backend
+# ──────────────────────────────────────────
+resource "aws_security_group_rule" "rds_from_cake_backend" {
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  security_group_id        = var.rds_security_group_id
+  source_security_group_id = aws_security_group.backend_sg.id
+  description              = "Allow MySQL access from cake app backend"
+}
+
+# ──────────────────────────────────────────
+# S3 — Email Storage Bucket
+# ──────────────────────────────────────────
+resource "aws_s3_bucket" "email_storage" {
+  bucket = "${var.app_name}-email-storage-${random_id.suffix.hex}"
+
+  tags = {
+    Name = "${var.app_name}-email-storage"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "email_storage" {
+  bucket                  = aws_s3_bucket.email_storage.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_policy" "email_storage" {
+  bucket = aws_s3_bucket.email_storage.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ses.amazonaws.com" }
+      Action    = "s3:PutObject"
+      Resource  = "${aws_s3_bucket.email_storage.arn}/*"
+      Condition = {
+        StringEquals = {
+          "aws:Referer" = "380821404208"
+        }
+      }
+    }]
+  })
+}
+
+# ──────────────────────────────────────────
+# IAM — Lambda Execution Role
+# ──────────────────────────────────────────
+resource "aws_iam_role" "lambda_role" {
+  name = "${var.app_name}-lambda-email-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "lambda_policy" {
+  name = "${var.app_name}-lambda-email-policy"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = "${aws_s3_bucket.email_storage.arn}/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["ses:SendRawEmail"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+# ──────────────────────────────────────────
+# Lambda — Email Forwarding Function
+# ──────────────────────────────────────────
+resource "aws_lambda_function" "email_forwarder" {
+  filename         = "lambda/email_forwarder.zip"
+  function_name    = "${var.app_name}-email-forwarder"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "index.handler"
+  runtime          = "nodejs20.x"
+  source_code_hash = filebase64sha256("lambda/email_forwarder.zip")
+
+  environment {
+    variables = {
+      FORWARD_TO    = "nelasbakeryofficial@gmail.com"
+      FROM_EMAIL    = "orders@nelasbakery.com"
+      EMAIL_BUCKET  = aws_s3_bucket.email_storage.bucket
+    }
+  }
+}
+
+resource "aws_lambda_permission" "ses_invoke" {
+  statement_id  = "AllowSESInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.email_forwarder.function_name
+  principal     = "ses.amazonaws.com"
+  source_account = "380821404208"
+}
+
+# ──────────────────────────────────────────
+# SES — Receipt Rule Set and Rule
+# ──────────────────────────────────────────
+resource "aws_ses_receipt_rule_set" "nelasbakery" {
+  rule_set_name = "nelasbakery-rules"
+}
+
+resource "aws_ses_active_receipt_rule_set" "nelasbakery" {
+  rule_set_name = aws_ses_receipt_rule_set.nelasbakery.rule_set_name
+}
+
+resource "aws_ses_receipt_rule" "forward_orders" {
+  name          = "forward-to-gmail"
+  rule_set_name = aws_ses_receipt_rule_set.nelasbakery.rule_set_name
+  recipients    = ["orders@nelasbakery.com"]
+  enabled       = true
+  scan_enabled  = true
+
+  s3_action {
+    bucket_name = aws_s3_bucket.email_storage.bucket
+    position    = 1
+  }
+
+  lambda_action {
+    function_arn    = aws_lambda_function.email_forwarder.arn
+    invocation_type = "Event"
+    position        = 2
+  }
+}
