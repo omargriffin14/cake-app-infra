@@ -691,7 +691,3 @@ resource "aws_ses_receipt_rule" "forward_orders" {
     position        = 2
   }
 }
-
-# In your cake app infrastructure repo
-git commit --allow-empty -m "trigger: recreate NAT Gateway" 
-git push
