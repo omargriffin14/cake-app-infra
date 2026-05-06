@@ -36,7 +36,7 @@ resource "aws_security_group" "backend_sg" {
 }
 
 # ──────────────────────────────────────────
-# EC2 — Backend (private subnet)
+# EC2 — Backend (public subnet)
 # ──────────────────────────────────────────
 resource "aws_instance" "backend" {
   ami                         = var.ec2_ami
@@ -293,52 +293,6 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
 resource "aws_iam_role_policy_attachment" "ssm_access" {
   role       = aws_iam_role.backend_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-# ──────────────────────────────────────────
-# Elastic IP — NAT Gateway
-# ──────────────────────────────────────────
-resource "aws_eip" "nat" {
-  domain = "vpc"
-
-  tags = {
-    Name = "${var.app_name}-nat-eip"
-  }
-}
-
-# ──────────────────────────────────────────
-# NAT Gateway — Public Subnet
-# ──────────────────────────────────────────
-resource "aws_nat_gateway" "main" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = var.public_subnet_id
-
-  tags = {
-    Name = "${var.app_name}-nat-gateway"
-  }
-
-  depends_on = [aws_eip.nat]
-}
-
-# ──────────────────────────────────────────
-# Route Table — Private Subnet
-# ──────────────────────────────────────────
-resource "aws_route_table" "private" {
-  vpc_id = var.vpc_id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main.id
-  }
-
-  tags = {
-    Name = "${var.app_name}-private-rt"
-  }
-}
-
-resource "aws_route_table_association" "private" {
-  subnet_id      = var.private_subnet_id
-  route_table_id = aws_route_table.private.id
 }
 
 # ──────────────────────────────────────────
