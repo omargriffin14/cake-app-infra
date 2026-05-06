@@ -39,20 +39,25 @@ resource "aws_security_group" "backend_sg" {
 # EC2 — Backend (private subnet)
 # ──────────────────────────────────────────
 resource "aws_instance" "backend" {
-  ami                    = var.ec2_ami
-  instance_type          = var.ec2_instance_type
-  subnet_id              = var.private_subnet_id
-  vpc_security_group_ids = [aws_security_group.backend_sg.id]
-  key_name               = var.ec2_key_name
-  iam_instance_profile   = aws_iam_instance_profile.backend_profile.name
+  ami                         = var.ec2_ami
+  instance_type               = var.ec2_instance_type
+  subnet_id                   = var.public_subnet_id
+  vpc_security_group_ids      = [aws_security_group.backend_sg.id]
+  key_name                    = var.ec2_key_name
+  iam_instance_profile        = aws_iam_instance_profile.backend_profile.name
+  associate_public_ip_address = true
 
   user_data = <<-EOF
     #!/bin/bash
     yum update -y
-    yum install -y docker
+    yum install -y docker git
     systemctl start docker
     systemctl enable docker
     usermod -aG docker ec2-user
+    git clone https://github.com/omargriffin14/cake-app.git /usr/bin/cake-app
+    cd /usr/bin/cake-app/backend
+    docker build -t nelas-bakery-backend .
+    docker run -d -p 5000:5000 --restart always --name cake-backend nelas-bakery-backend
   EOF
 
   tags = {
