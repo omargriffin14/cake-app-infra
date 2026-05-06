@@ -2,8 +2,8 @@ output "backend_ec2_id" {
   value = aws_instance.backend.id
 }
 
-output "backend_ec2_private_ip" {
-  value = aws_instance.backend.private_ip
+output "backend_ec2_public_ip" {
+  value = aws_instance.backend.public_ip
 }
 
 output "frontend_s3_bucket" {
@@ -16,10 +16,6 @@ output "cloudfront_url" {
 
 output "db_secret_arn" {
   value = aws_secretsmanager_secret.db_credentials.arn
-}
-
-output "nat_gateway_id" {
-  value = aws_nat_gateway.main.id
 }
 
 output "uploads_bucket_name" {
